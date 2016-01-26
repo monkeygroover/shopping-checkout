@@ -13,19 +13,26 @@ trait TotalCalculator {
 
 /***
   * represents a checkout seeded with particular pricing data
-  * @param prices A map containing the price of each item type
+  *
+  * @param prices A map containing a price rule for each item type
   */
-case class Checkout(prices: Map[String, Int]) extends TotalCalculator {
+case class Checkout(prices: Map[String, Pricer]) extends TotalCalculator {
   val calculateTotal = (items: List[String]) => {
 
     // create a map containing the frequency that each item type occurs in the list
     val itemFrequency: Map[String, Int] = items.groupBy(identity).mapValues(_.size)
 
     // use the pricing data to find the total spent on each item type
-    // Note, have made the simplifying assumption that if an item is provided that is not in the price map then
-    // its price is considered 0, in reality I would use a Validation Either and return an applicative error functionally
-    val subTotals: Iterable[Int] = itemFrequency map { case (item, count) => prices.getOrElse(item, 0) * count }
+    val subTotals: Iterable[Int] = itemFrequency map { case (item, count) => {
+      val pricer = prices.get(item)
+
+      // Note, again I have made the simplifying assumption that if an item is provided that is not in the price map then
+      // its price is considered 0, in reality I would use a Validation Either and return an applicative error functionally
+      pricer.map { _.priceForItems(count) } getOrElse 0
+    }}
 
     subTotals.sum
   }
 }
+
+
