@@ -1,14 +1,16 @@
-import scala.collection.immutable.Iterable
-
 /**
   * Created by monkeygroover on 26/01/16.
   */
+
+import scala.collection.immutable.Iterable
+import scalaz._
+import Scalaz._
 
 /***
   * base trait for all implementations that can calculate a total from an input list
   */
 trait TotalCalculator {
-  val calculateTotal: List[String] => Int
+  val calculateTotal: List[String] => ValidationNel[String, Int]
 }
 
 /***
@@ -23,15 +25,13 @@ case class Checkout(prices: Map[String, Pricer]) extends TotalCalculator {
     val itemFrequency: Map[String, Int] = items.groupBy(identity).mapValues(_.size)
 
     // use the pricing data to find the total spent on each item type
-    val subTotals: Iterable[Int] = itemFrequency map { case (item, count) => {
+    val subTotals: Iterable[ValidationNel[String, Int]] = itemFrequency map { case (item, count) => {
       val pricer = prices.get(item)
 
-      // Note, again I have made the simplifying assumption that if an item is provided that is not in the price map then
-      // its price is considered 0, in reality I would use a Validation Either and return an applicative error functionally
-      pricer.map { _.priceForItems(count) } getOrElse 0
+      pricer.map { _.priceForItems(count).success } getOrElse s"no price for $item".failureNel
     }}
 
-    subTotals.sum
+    subTotals.reduce(_ |+| _)
   }
 }
 
