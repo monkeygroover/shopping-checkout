@@ -1,18 +1,14 @@
 /**
   * Created by monkeygroover on 26/01/16.
   */
-trait Pricer {
-  def priceForItems(itemCount: Int) : Int
-}
 
-case class UnitPricer(unitPrice: Int) extends Pricer {
-  def priceForItems(itemCount: Int) = itemCount * unitPrice
-}
+object Pricers {
 
-case class BuyOneGetOneFree(unitPrice: Int) extends Pricer {
-  def priceForItems(itemCount: Int) = (itemCount / 2 + itemCount % 2) * unitPrice
-}
+  type PriceFn = (Int) => Int
 
-case class ThreeForTwo(unitPrice: Int) extends Pricer {
-  def priceForItems(itemCount: Int) = ((itemCount / 3) * 2 * unitPrice) + (itemCount % 3 * unitPrice)
+  def unitPricer(unitPrice: Int) = (itemCount: Int) => itemCount * unitPrice
+
+  def buyOneGetOneFree(unitPrice: Int) = (itemCount: Int) => (itemCount / 2 + itemCount % 2) * unitPrice
+
+  def threeForTwo(unitPrice: Int) = (itemCount: Int) => ((itemCount / 3) * 2 * unitPrice) + (itemCount % 3 * unitPrice)
 }

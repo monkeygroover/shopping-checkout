@@ -2,6 +2,8 @@
   * Created by monkeygroover on 26/01/16.
   */
 
+import Pricers.PriceFn
+
 import scala.collection.immutable.Iterable
 import scalaz._
 import Scalaz._
@@ -16,20 +18,14 @@ trait TotalCalculator {
 /***
   * represents a checkout seeded with particular pricing data
   *
-  * @param prices A map containing a price rule for each item type
+  * @param pricers A map containing a price rule for each item type
   */
-case class Checkout(prices: Map[String, Pricer]) extends TotalCalculator {
+case class Checkout(pricers: Map[String, PriceFn]) extends TotalCalculator {
   val calculateTotal = (items: List[String]) => {
 
-    // create a map containing the frequency that each item type occurs in the list
-    val itemFrequency: Map[String, Int] = items.groupBy(identity).mapValues(_.size)
-
-    // use the pricing data to find the total spent on each item type
-    val subTotals: Iterable[ValidationNel[String, Int]] = itemFrequency map { case (item, count) => {
-      val pricer = prices.get(item)
-
-      pricer.map { _.priceForItems(count).success } getOrElse s"no price for $item".failureNel
-    }}
+    val subTotals: Iterable[ValidationNel[String, Int]] = for {
+      (item, count) <- items.foldMap(item => Map(item -> 1)) // creates a map containing the count for each item in the list
+    } yield pricers.get(item).fold(ifEmpty = s"no pricer for $item".failureNel[Int]) { _(count).success }
 
     subTotals.reduce(_ |+| _)
   }
