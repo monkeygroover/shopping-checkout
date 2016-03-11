@@ -28,9 +28,7 @@ case class Checkout(pricers: Map[String, (Int) => Int]) extends TotalCalculator 
         pricer => pricer(itemData._2).success
       }
 
-    itemFrequencies map calculateSubtotal reduce {
-      _ |+| _
-    }
+    itemFrequencies map calculateSubtotal reduce {_ |+| _}
   }
 }
 
